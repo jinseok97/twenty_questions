@@ -8,7 +8,7 @@ import java.rmi.RemoteException;
 
 public class ClientWindow {
     static MyJFrame myJFrame = new MyJFrame();
-    Client client = new Client();
+    Client client = new Client(this);
     int port = 1111;
 
     private static final String password = "123456";
@@ -33,36 +33,62 @@ public class ClientWindow {
                 JOptionPane.showMessageDialog(null, "중복되거나 6자를 초과합니다!", "경고", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+
+            client.game.addUser(myJFrame.tfName.getText());
+            client.start("localhost", port, myJFrame.tfName.getText());
+
+            myJFrame.tfName.setEnabled(false);
+            myJFrame.btSaveName.setEnabled(false);
+
         } catch (RemoteException e) {
             e.printStackTrace();
         }
-
-        client.start("localhost", port, myJFrame.tfName.getText());
-
-        myJFrame.tfName.setEnabled(false);
-        myJFrame.btSaveName.setEnabled(false);
-    }
-
-
-    public void passTurn() {
     }
 
     public void send() {
-        String msg = myJFrame.tfChat.getText();
-        client.sendMessage(msg);
-
-        myJFrame.tfChat.setText("");
+        String msg = "$10$" +myJFrame.tfChatInput.getText();
+        client.sendToServer(msg);
+        myJFrame.tfChatInput.setText("");
     }
-    public void button1() {
+    public void startGame() {
+        try {
+            client.game.setIsStart();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
-    public void button2() {
+    public void askQuestion() {
     }
-    public void button3() {
+    public void pass() {
     }
     public void button4() {
     }
 
+    public void passTurn() {
+        String[] userList = client.userList.toArray(new String[client.userList.size()]);
+        myJFrame.listUser.setListData(userList);
+    }
+
+    public void addChat(String msg) {
+        myJFrame.taIncoming.append(msg + "\n");
+    }
+
     public void update() {
+        try {
+            if (client.game.isRunning()) {
+                myJFrame.btStart.setEnabled(false);
+                myJFrame.btPassTurn.setEnabled(true);
+                myJFrame.btQuestion.setEnabled(true);
+                myJFrame.btButton4.setEnabled(true);
+            } else {
+                myJFrame.btStart.setEnabled(true);
+                myJFrame.btPassTurn.setEnabled(false);
+                myJFrame.btQuestion.setEnabled(false);
+                myJFrame.btButton4.setEnabled(false);
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 }
 
@@ -71,15 +97,14 @@ class MyJFrame extends JFrame {
     ClientWindow clientWindow = new ClientWindow();
 
     JPanel panelMain;
-    JTextField tfName, tfChat, tfHost;
-    JButton btSend, btSaveName, btPassTurn;
-    JButton btExit;
-    JButton btButton1, btButton2, btButton3, btButton4;
+    JTextField  tfName, tfChatInput, tfHost;
+    JButton btSaveName, btSend;
 
+    JButton btStart, btQuestion, btPassTurn, btButton4;
 
-    DefaultListModel chatModel;
+    JTextArea taIncoming;
+
     DefaultListModel userModel;
-    JList<String> listChat;
     JList<String> listUser;
 
     public MyJFrame() { // 전체적인 GUI 설정
@@ -88,12 +113,13 @@ class MyJFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 400, 400);
 
-        /*===== Main Panel =====*/
+        //====== Main Panel ======//
         panelMain = new JPanel();
         panelMain.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(panelMain);
         panelMain.setLayout(null);
 
+        /** 사용자 이름 - 입력 - 저장 */
         JLabel lbName = new JLabel("사용자 이름");
         lbName.setFont(new Font("굴림", Font.PLAIN, 12));
         lbName.setBounds(15, 12, 70, 15);
@@ -102,6 +128,13 @@ class MyJFrame extends JFrame {
         tfName = new JTextField();
         tfName.setBounds(75, 10, 110, 21);
         tfName.setColumns(10);
+        tfName.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                clientWindow.saveName();
+                clientWindow.passTurn();
+            }
+        });
         panelMain.add(tfName);
 
         btSaveName = new JButton("저장");
@@ -110,48 +143,29 @@ class MyJFrame extends JFrame {
         btSaveName.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 clientWindow.saveName();
-                clientWindow.update();
+                clientWindow.passTurn();
             }
         });
         panelMain.add(btSaveName);
 
 
-        btPassTurn = new JButton("패스");
-        btPassTurn.setFont(new Font("굴림", Font.PLAIN, 12));
-        btPassTurn.setEnabled(false);
-        btPassTurn.setBounds(384, 382, 103, 23);
-        btPassTurn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                clientWindow.passTurn();
-                clientWindow.update();
-            }
-        });
-        panelMain.add(btPassTurn);
 
-        btExit = new JButton("종료");
-        btExit.setFont(new Font("굴림", Font.PLAIN, 12));
-        btExit.setBounds(384, 415, 103, 23);
-        btExit.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
-                System.exit(0);
-            }
-        });
-        panelMain.add(btExit);
+        taIncoming = new JTextArea(15, 50);
+        taIncoming.setBounds(10, 40, 280, 290);
+        taIncoming.setLineWrap(true);
+        taIncoming.setWrapStyleWord(true);
+        taIncoming.setEditable(false);
 
-        chatModel = new DefaultListModel();
-        listChat = new JList<String>();
-        listChat.setModel(chatModel);
-        listChat.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-        listChat.setBounds(10, 40, 280, 290);
-        listChat.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        JScrollPane chatScroll = new JScrollPane(listChat);
+        JScrollPane chatScroll = new JScrollPane(taIncoming);
         chatScroll.setBounds(10, 40, 280, 290);
-        chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        chatScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        chatScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         panelMain.add(chatScroll);
 
+        /** 호스트 - 유저리스트 */
         tfHost = new JTextField();
         tfHost.setBounds(296, 40, 98, 21);
+        tfHost.setEditable(false);
         tfHost.setColumns(10);
         panelMain.add(tfHost);
 
@@ -167,54 +181,66 @@ class MyJFrame extends JFrame {
         userScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         panelMain.add(userScroll);
 
-        btButton1 = new JButton("버튼1");
-        btButton1.setFont(new Font("굴림", Font.PLAIN, 12));
-        btButton1.setBounds(296, 180, 98, 34);
-        btButton1.addActionListener(new ActionListener() {
+        /** 게임시작 - 패스 - 질문 - 목록 버튼 */
+        btStart = new JButton("게임 시작하기");
+        btStart.setFont(new Font("굴림", Font.PLAIN, 12));
+        btStart.setBounds(296, 180, 98, 34);
+        btStart.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                clientWindow.button1();
+                clientWindow.startGame();
                 clientWindow.update();
             }
         });
-        panelMain.add(btButton1);
+        panelMain.add(btStart);
 
-        btButton2 = new JButton("버튼1");
-        btButton2.setFont(new Font("굴림", Font.PLAIN, 12));
-        btButton2.setBounds(296, 215, 98, 34);
-        btButton2.addActionListener(new ActionListener() {
+        btQuestion = new JButton("질문하기");
+        btQuestion.setFont(new Font("굴림", Font.PLAIN, 12));
+        btQuestion.setBounds(296, 215, 98, 34);
+        btQuestion.setEnabled(false);
+        btQuestion.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                clientWindow.button2();
-                clientWindow.update();
+                clientWindow.askQuestion();
+                clientWindow.passTurn();
             }
         });
-        panelMain.add(btButton2);
+        panelMain.add(btQuestion);
 
-        btButton3 = new JButton("버튼1");
-        btButton3.setFont(new Font("굴림", Font.PLAIN, 12));
-        btButton3.setBounds(296, 250, 98, 34);
-        btButton3.addActionListener(new ActionListener() {
+        btPassTurn = new JButton("패스하기");
+        btPassTurn.setFont(new Font("굴림", Font.PLAIN, 12));
+        btPassTurn.setBounds(296, 250, 98, 34);
+        btPassTurn.setEnabled(false);
+        btPassTurn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                clientWindow.button3();
-                clientWindow.update();
+                clientWindow.pass();
+                clientWindow.passTurn();
             }
         });
-        panelMain.add(btButton3);
+        panelMain.add(btPassTurn);
 
-        btButton4 = new JButton("버튼1");
+        btButton4 = new JButton("질문 목록");
         btButton4.setFont(new Font("굴림", Font.PLAIN, 12));
         btButton4.setBounds(296, 285, 98, 34);
+        btButton4.setEnabled(false);
         btButton4.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 clientWindow.button4();
-                clientWindow.update();
+                clientWindow.passTurn();
             }
         });
         panelMain.add(btButton4);
 
-        tfChat = new JTextField();
-        tfChat.setBounds(6, 340, 288, 20);
-        tfChat.setColumns(10);
-        panelMain.add(tfChat);
+        /** 대화 입력창 - 전송 버튼 */
+        tfChatInput = new JTextField();
+        tfChatInput.setBounds(6, 340, 288, 20);
+        tfChatInput.setColumns(10);
+        tfChatInput.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                clientWindow.send();
+                clientWindow.passTurn();
+            }
+        });
+        panelMain.add(tfChatInput);
 
         btSend = new JButton("전송");
         btSend.setFont(new Font("굴림", Font.PLAIN, 12));
@@ -222,7 +248,7 @@ class MyJFrame extends JFrame {
         btSend.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 clientWindow.send();
-                clientWindow.update();
+                clientWindow.passTurn();
             }
         });
         panelMain.add(btSend);

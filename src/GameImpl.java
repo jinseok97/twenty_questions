@@ -11,6 +11,7 @@ import java.util.Iterator;
 public class GameImpl extends UnicastRemoteObject implements Game {
     private static final long serialVersionUID = 1L;
 
+    boolean isStart = false;
     String currQuestion;
     HashMap<String, String> questionList;
     ArrayList<String> nameList;
@@ -53,11 +54,33 @@ public class GameImpl extends UnicastRemoteObject implements Game {
 
     @Override
     public boolean checkNameFormat(String name) throws RemoteException{
-        if (name.length() <= 6 && !nameList.contains(name)) {
-            nameList.add(name);
-            return true;
-        } else {
-            return false;
+        return name.length() <= 6 && !nameList.contains(name);
+    }
+
+    @Override
+    public void addUser(String name) throws RemoteException {
+        nameList.add(name);
+    }
+
+    @Override
+    public void removeUser(String name) throws RemoteException {
+        if (!name.isEmpty()) {
+            nameList.remove(name);
         }
+    }
+
+    @Override
+    public ArrayList<String> getUserList() throws RemoteException {
+        return nameList;
+    }
+
+    @Override
+    public void setIsStart() throws RemoteException {
+        isStart = true;
+    }
+
+    @Override
+    public boolean isRunning() throws RemoteException {
+        return isStart;
     }
 }

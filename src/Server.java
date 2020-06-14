@@ -65,8 +65,8 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
             SSLServerSocketFactory sslServerSocketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
             serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(1111);
             System.out.println("SSLSOCKET");
-            Thread thread = new ServerThread();
-            thread.start();
+
+            new ServerThread().start();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -196,12 +196,14 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
         DataOutputStream out;*/
         private BufferedReader in = null;
         private PrintWriter out = null;
+        private String name = "";
 
         ServerReceiver(SSLSocket socket) {
             this.socket = socket;
             try {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+
             } catch (IOException e) {
             }
         }
@@ -213,32 +215,51 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
          */
         @Override
         public void run() {
-            System.out.println("SERVERRECEIVER RUN");
-            String message = "";
             String line = null;
-            StringTokenizer st = null;
-
-            // 방장의 닉네임
-            String name = "";
-
             int num = 0;
+            String msg = "";
             try {
                  // 클라이언트에서 전송하는 메시지를 받는다.
-
                 while ((line = in.readLine()) != null) {
-                    System.out.println(line);
-                    sendToAll("hello ");
-                    sendToAll(line);
+
+                    if (line.startsWith("$")) {
+                        num = Integer.parseInt(line.substring(1, 3));
+                        msg = line.substring(4);
+
+                        switch (num) {
+                            case 01:
+                                // 유저 연결
+                                name = msg;
+                                userMap.add(name, out);
+                                sendToAll("#01#" + name);
+                                break;
+
+                            case 10:
+                                sendToAll("#10#" + name + " : " + msg);
+                                break;
+
+                            default:
+                                System.err.println("Exception");
+                        }
+
+                    } else {
+                        System.out.println("Exception");
+                    }
                 }
             } catch (IOException e) {
             }
             // 클라이언트에서 접속을 종료한 경우
             finally {
-                sendToAll("100#" + name + "님이 나가셨습니다.");
-                User exitUser = userMap.getUser(name);
-                userMap.remove(name);
+                try {
+                    userMap.remove(name);
+                    game.removeUser(name);
+                    sendToAll("#99#" + name);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
 
                 // 방장이 나갈경우 나머지 사람 중 한명이 방장이 된다.
+                User exitUser = userMap.getUser(name);
                 if (exitUser.host) {
                     if (userMap.clients.size() >= 1) {
 //                        userMap.getRandomUser().host = true;
