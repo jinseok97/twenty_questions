@@ -12,6 +12,6 @@ public interface Game extends Remote {
     void removeUser(String name) throws RemoteException;
     ArrayList<String> getUserList() throws RemoteException;
 
-    void setIsStart() throws RemoteException;
+    void Start() throws RemoteException;
     boolean isRunning() throws RemoteException;
 }

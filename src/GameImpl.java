@@ -75,7 +75,7 @@ public class GameImpl extends UnicastRemoteObject implements Game {
     }
 
     @Override
-    public void setIsStart() throws RemoteException {
+    public void Start() throws RemoteException {
         isStart = true;
     }
 

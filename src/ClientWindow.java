@@ -39,6 +39,8 @@ public class ClientWindow {
 
             myJFrame.tfName.setEnabled(false);
             myJFrame.btSaveName.setEnabled(false);
+            myJFrame.btSend.setEnabled(true);
+            myJFrame.btStart.setEnabled(true);
 
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -50,23 +52,21 @@ public class ClientWindow {
         client.sendToServer(msg);
         myJFrame.tfChatInput.setText("");
     }
-    public void startGame() {
+    public void gameStart() {
         try {
-            client.game.setIsStart();
+            client.game.Start();
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
     public void askQuestion() {
     }
-    public void pass() {
-    }
-    public void button4() {
+
+    public void showQuestions() {
     }
 
     public void passTurn() {
-        String[] userList = client.userList.toArray(new String[client.userList.size()]);
-        myJFrame.listUser.setListData(userList);
+
     }
 
     public void addChat(String msg) {
@@ -75,16 +75,20 @@ public class ClientWindow {
 
     public void update() {
         try {
+            String[] userList = client.userList.toArray(new String[client.userList.size()]);
+            myJFrame.listUser.setListData(userList);
+
+            // 게임 진행 여부에 따른 버튼 활성화
             if (client.game.isRunning()) {
                 myJFrame.btStart.setEnabled(false);
                 myJFrame.btPassTurn.setEnabled(true);
                 myJFrame.btQuestion.setEnabled(true);
-                myJFrame.btButton4.setEnabled(true);
+                myJFrame.btShow.setEnabled(true);
             } else {
                 myJFrame.btStart.setEnabled(true);
                 myJFrame.btPassTurn.setEnabled(false);
                 myJFrame.btQuestion.setEnabled(false);
-                myJFrame.btButton4.setEnabled(false);
+                myJFrame.btShow.setEnabled(false);
             }
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -100,7 +104,7 @@ class MyJFrame extends JFrame {
     JTextField  tfName, tfChatInput, tfHost;
     JButton btSaveName, btSend;
 
-    JButton btStart, btQuestion, btPassTurn, btButton4;
+    JButton btStart, btQuestion, btPassTurn, btShow;
 
     JTextArea taIncoming;
 
@@ -132,7 +136,7 @@ class MyJFrame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 clientWindow.saveName();
-                clientWindow.passTurn();
+                clientWindow.update();
             }
         });
         panelMain.add(tfName);
@@ -143,7 +147,7 @@ class MyJFrame extends JFrame {
         btSaveName.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 clientWindow.saveName();
-                clientWindow.passTurn();
+                clientWindow.update();
             }
         });
         panelMain.add(btSaveName);
@@ -185,9 +189,10 @@ class MyJFrame extends JFrame {
         btStart = new JButton("게임 시작하기");
         btStart.setFont(new Font("굴림", Font.PLAIN, 12));
         btStart.setBounds(296, 180, 98, 34);
+        btStart.setEnabled(false);
         btStart.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                clientWindow.startGame();
+                clientWindow.gameStart();
                 clientWindow.update();
             }
         });
@@ -200,7 +205,7 @@ class MyJFrame extends JFrame {
         btQuestion.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 clientWindow.askQuestion();
-                clientWindow.passTurn();
+                clientWindow.update();
             }
         });
         panelMain.add(btQuestion);
@@ -211,23 +216,23 @@ class MyJFrame extends JFrame {
         btPassTurn.setEnabled(false);
         btPassTurn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                clientWindow.pass();
                 clientWindow.passTurn();
+                clientWindow.update();
             }
         });
         panelMain.add(btPassTurn);
 
-        btButton4 = new JButton("질문 목록");
-        btButton4.setFont(new Font("굴림", Font.PLAIN, 12));
-        btButton4.setBounds(296, 285, 98, 34);
-        btButton4.setEnabled(false);
-        btButton4.addActionListener(new ActionListener() {
+        btShow = new JButton("질문목록");
+        btShow.setFont(new Font("굴림", Font.PLAIN, 12));
+        btShow.setBounds(296, 285, 98, 34);
+        btShow.setEnabled(false);
+        btShow.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                clientWindow.button4();
-                clientWindow.passTurn();
+                clientWindow.showQuestions();
+                clientWindow.update();
             }
         });
-        panelMain.add(btButton4);
+        panelMain.add(btShow);
 
         /** 대화 입력창 - 전송 버튼 */
         tfChatInput = new JTextField();
@@ -237,7 +242,7 @@ class MyJFrame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 clientWindow.send();
-                clientWindow.passTurn();
+                clientWindow.update();
             }
         });
         panelMain.add(tfChatInput);
@@ -245,10 +250,11 @@ class MyJFrame extends JFrame {
         btSend = new JButton("전송");
         btSend.setFont(new Font("굴림", Font.PLAIN, 12));
         btSend.setBounds(294, 339, 103, 23);
+        btSend.setEnabled(false);
         btSend.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 clientWindow.send();
-                clientWindow.passTurn();
+                clientWindow.update();
             }
         });
         panelMain.add(btSend);
