@@ -1,5 +1,5 @@
 /**
- * java -Djavax.net.ssl.trustStore=trustedcerts -Djavax.net.ssl.trustStorePassword=123456 -Djava.rmi.server.hostname=localhost Client room1
+ *
  */
 
 import java.io.*;
@@ -38,17 +38,17 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.out.println("Usage: Classname ServiceName");
-            System.exit(1);
-        }
+//        if (args.length != 1) {
+//            System.out.println("Usage: Classname ServiceName");
+//            System.exit(1);
+//        }
 
         System.setProperty("javax.net.ssl.keyStore", "mySrvKeystore");
         System.setProperty("javax.net.ssl.keyStorePassword", "123456");
         System.setProperty("java.rmi.server.hostname", "localhost");
         System.setProperty("javax.net.debug", "ssl");
 
-        String mServiceName = args[0];
+        String mServiceName = "room1";
         System.out.println("started at localhost and use default port(1099), Service name " +mServiceName);
 
         try {
@@ -90,47 +90,27 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
     }
 
     /**
-     * UserInfo.host == true 인 클라이언트에 메시지를 전송한다.
+     * User.host == true 인 클라이언트에 메시지를 전송한다.
      *
      *
      * @param msg
      */
     void sendToHost(String msg) {
-        Iterator it = userMap.getMap().keySet().iterator();
-
-        while (it.hasNext()) {
-            try {
-                User user = userMap.getMap().get(it.next());
-                if (user.host) {
-                    PrintWriter out = user.pw;
-                    out.println(msg);
-                    out.flush();
-                }
-            } catch (Exception e) {
-            }
-        }
+        User hostUser = userMap.getHost();
+        hostUser.pw.println(msg);
+        hostUser.pw.flush();
     }
 
     /**
-     * UserInfo.turn == true 인 클라이언트에 메시지를 전송한다.
+     * User.turn == true 인 클라이언트에 메시지를 전송한다.
      *
      *
      * @param msg
      */
     void sendToTurn(String msg) {
-        Iterator it = userMap.getMap().keySet().iterator();
-
-        while (it.hasNext()) {
-            try {
-                User user = userMap.getMap().get(it.next());
-                if (user.turn) {
-                    PrintWriter out = user.pw;
-                    out.println(msg);
-                    out.flush();
-                }
-            } catch (Exception e) {
-            }
-        }
+        User turnUser = userMap.getTurn();
+        turnUser.pw.println(msg);
+        turnUser.pw.flush();
     } // sendToOne()
 
     /**
@@ -139,18 +119,7 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
      * @param user
      */
     void setTurn(User user) {
-        Iterator it = userMap.getMap().keySet().iterator();
-        while (it.hasNext()) {
-            try {
-                User tmp = (User) it.next();
-                if (tmp == user) {
-                    user.turn = true;
-                } else {
-                    user.turn = false;
-                }
-            } catch (Exception e) {
-            }
-        }
+        userMap.setTurn(user);
     }
 
     /**
@@ -235,8 +204,18 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
                                 break;
 
                             case 10:
+                                // 일반 채팅
                                 sendToAll("#10#" + name + " : " + msg);
                                 break;
+
+                            case 20:
+                                // 질문
+                                sendToAll("#20#" + name + "님의 질문 : " + msg);
+
+
+                            case 40:
+                                // 게임 시작
+                                game.setFinalAnswer(msg);
 
                             default:
                                 System.err.println("Exception");
@@ -281,16 +260,6 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
             String[] submit = msg.split("]", 2);
             return (submit[1].equalsIgnoreCase(answer));
         }
-
-        /**
-         * msg를 파싱하여 username을 리턴
-         * @param msg
-         * @return
-         */
-        public String getUser(String msg) {
-            return msg.substring(1, msg.indexOf(']'));
-        }
-
 
     } // ReceiverThread
 }

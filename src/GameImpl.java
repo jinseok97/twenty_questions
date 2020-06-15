@@ -1,26 +1,24 @@
 // -Djava.rmi.server.hostname=localhost
 
-import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 
 public class GameImpl extends UnicastRemoteObject implements Game {
     private static final long serialVersionUID = 1L;
 
     boolean isStart = false;
-    String currQuestion;
-    HashMap<String, String> questionList;
-    ArrayList<String> nameList;
+    String finalAnswer;
+    ArrayList<String> questionList;
+    ArrayList<String> answerList;
+    ArrayList<String> userList;
 
     public GameImpl() throws RemoteException {
         super();
-        currQuestion = "";
-        questionList = new HashMap<>();
-        nameList = new ArrayList<>();
+        finalAnswer = "";
+        questionList = new ArrayList<>();
+        answerList = new ArrayList<>();
+        userList = new ArrayList<>();
     }
 
     @Override
@@ -30,9 +28,9 @@ public class GameImpl extends UnicastRemoteObject implements Game {
         if (command.equals("!정답")) {
 
         } else if (command.equals("!목록")) {
-            for (String question : questionList.keySet()) {
-                result += question + " " + questionList.get(question) + "\n";
-            }
+//            for (String question : questionList.keySet()) {
+//                result += question + " " + questionList.get(question) + "\n";
+//            }
         } else if (command.equals("!패스")) {
 
         } else {
@@ -44,34 +42,34 @@ public class GameImpl extends UnicastRemoteObject implements Game {
 
     @Override
     public void addQuestion(String question) throws RemoteException {
-        questionList.put(question, "");
+        questionList.add(question);
     }
 
     @Override
     public void setAnswer(String answer) throws RemoteException {
-        questionList.replace(currQuestion, answer);
+        answerList.add(answer);
     }
 
     @Override
     public boolean checkNameFormat(String name) throws RemoteException{
-        return name.length() <= 6 && !nameList.contains(name);
+        return name.length() <= 6 && !userList.contains(name);
     }
 
     @Override
     public void addUser(String name) throws RemoteException {
-        nameList.add(name);
+        userList.add(name);
     }
 
     @Override
     public void removeUser(String name) throws RemoteException {
         if (!name.isEmpty()) {
-            nameList.remove(name);
+            userList.remove(name);
         }
     }
 
     @Override
     public ArrayList<String> getUserList() throws RemoteException {
-        return nameList;
+        return userList;
     }
 
     @Override
@@ -82,5 +80,19 @@ public class GameImpl extends UnicastRemoteObject implements Game {
     @Override
     public boolean isRunning() throws RemoteException {
         return isStart;
+    }
+
+    @Override
+    public ArrayList<String> showQuestions() throws RemoteException {
+        for (int i = 0; i < questionList.size(); i++) {
+            questionList.set(i, questionList.get(i) + " " + answerList.get(i));
+        }
+
+        return questionList;
+    }
+
+    @Override
+    public void setFinalAnswer(String in) throws RemoteException {
+        finalAnswer = in;
     }
 }

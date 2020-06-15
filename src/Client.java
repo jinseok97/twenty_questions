@@ -22,6 +22,7 @@ public class Client {
 
     // 차례
     boolean turn = false;
+    boolean host = false;
 
     public Client(ClientWindow cw) {
         try {

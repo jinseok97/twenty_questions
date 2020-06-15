@@ -4,7 +4,9 @@ import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.lang.reflect.Array;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 public class ClientWindow {
     static MyJFrame myJFrame = new MyJFrame();
@@ -54,6 +56,12 @@ public class ClientWindow {
     }
     public void gameStart() {
         try {
+            String answer;
+            if ((answer = JOptionPane.showInputDialog(null, "최종 정답을 입력해주세요.", "정답 입력", JOptionPane.OK_CANCEL_OPTION)) == null)
+                return;
+            String msg = "$40$" + answer;
+            client.sendToServer(msg);
+            client.host = true;
             client.game.Start();
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -63,6 +71,15 @@ public class ClientWindow {
     }
 
     public void showQuestions() {
+        try {
+            myJFrame.taIncoming.append("----현재까지의 질문과 답변 목록입니다----");
+            ArrayList<String> result = client.game.showQuestions();
+            for(String each : result) {
+                myJFrame.taIncoming.append(each + "\n");
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     public void passTurn() {
@@ -75,7 +92,7 @@ public class ClientWindow {
 
     public void update() {
         try {
-            String[] userList = client.userList.toArray(new String[client.userList.size()]);
+            String[] userList = client.game.getUserList().toArray(new String[client.game.getUserList().size()]);
             myJFrame.listUser.setListData(userList);
 
             // 게임 진행 여부에 따른 버튼 활성화
