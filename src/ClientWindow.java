@@ -4,13 +4,14 @@ import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.lang.reflect.Array;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
 public class ClientWindow {
     static MyJFrame myJFrame = new MyJFrame();
     Client client = new Client(this);
+
+    // 포트 번호
     int port = 1111;
 
     private static final String password = "123456";
@@ -23,6 +24,10 @@ public class ClientWindow {
         myJFrame.setVisible(true);
     }
 
+    /**
+     *  유저의 이름을 입력하고 서버와 연결을 시작하는 함수
+     *  중복 검사와 자리수 검사를 시행한다.
+     */
     public void saveName(){
         try {
             // 이름이 입력되지 않았을 경우
@@ -49,11 +54,20 @@ public class ClientWindow {
         }
     }
 
+    /**
+     *  UI 하단 일반 대화창의 내용을 전송하는 함수
+     *  서버에게 일반대화 프로토콜 번호와 함께 그 내용을 보낸다.
+     */
     public void send() {
         String msg = "$10$" +myJFrame.tfChatInput.getText();
         client.sendToServer(msg);
         myJFrame.tfChatInput.setText("");
     }
+
+    /**
+     *  게임 시작을 누른 유저가 host가 되며, 최종 정답을 입력받고 서버에게 게임시작 프로토콜 번호와 함께 그 내용을 보낸다.
+     *  현재 게임 정보를 담고 있는 RMI Object를 실행한다.
+     */
     public void gameStart() {
         try {
             String answer;
@@ -67,12 +81,51 @@ public class ClientWindow {
             e.printStackTrace();
         }
     }
+
+    /**
+     *  host에게 질문을 전송하게 되며, 일반 대화와는 별도이다.
+     *  질문 프로토콜 번호와 함께 그 내용을 전송하고, 질문 내용은 RMI Object에 저장한다.
+     */
     public void askQuestion() {
+        try {
+            String question;
+            if ((question = JOptionPane.showInputDialog(null, "당신의 질문은?", "질문 입력", JOptionPane.OK_CANCEL_OPTION)) == null)
+                return;
+            String msg = "$20$" + question;
+            client.game.addQuestion(msg);
+            client.sendToServer(msg);
+            client.turn = false;
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
     }
 
+    /**
+     *  host가 질문을 받았을 때 그에 대한 답변을 전송하는 함수
+     *  답변 프로토콜 번호와 함께 그 내용을 전송하고, 답변 내용은 RMI Object에 저장한다.
+     */
+    public void answerQuestion() {
+        try {
+            String answer;
+            if ((answer = JOptionPane.showInputDialog(null,
+                    client.game.getLastQuestion(), "대답 입력", JOptionPane.OK_OPTION)) == null)
+                return;
+            String msg = "$25$" + answer;
+            client.game.addAnswer(msg);
+            client.sendToServer(msg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     *  현재까지 나온 질문과 답변 목록을 출력한다.
+     *  RMI Object에 저장된 질문과 답변 정보를 사용한다.
+     */
     public void showQuestions() {
         try {
-            myJFrame.taIncoming.append("----현재까지의 질문과 답변 목록입니다----");
+            myJFrame.taIncoming.append("----현재까지의 질문과 답변 목록입니다----\n");
             ArrayList<String> result = client.game.showQuestions();
             for(String each : result) {
                 myJFrame.taIncoming.append(each + "\n");
@@ -82,18 +135,34 @@ public class ClientWindow {
         }
     }
 
+    /**
+     *  다음 타자에게 턴을 넘긴다.
+     */
     public void passTurn() {
+        client.turn = false;
+        client.sendToServer("$49$");
 
     }
 
+    /**
+     * 서버로부터 전송받은 내용을 대화창 textarea에 올린다.
+     * @param msg
+     */
     public void addChat(String msg) {
         myJFrame.taIncoming.append(msg + "\n");
     }
 
+    /**
+     * UI를 최신 정보로 갱신한다.
+     */
     public void update() {
         try {
+            // 현재 접속 유저 리스트
             String[] userList = client.game.getUserList().toArray(new String[client.game.getUserList().size()]);
             myJFrame.listUser.setListData(userList);
+
+            // 현재 게임의 호스트
+            myJFrame.tfHost.setText(client.game.getHostname());
 
             // 게임 진행 여부에 따른 버튼 활성화
             if (client.game.isRunning()) {
@@ -107,10 +176,22 @@ public class ClientWindow {
                 myJFrame.btQuestion.setEnabled(false);
                 myJFrame.btShow.setEnabled(false);
             }
+            if (client.host) {
+                myJFrame.btQuestion.setEnabled(false);
+                myJFrame.btPassTurn.setEnabled(false);
+            }
+            if (client.turn) {
+                myJFrame.btQuestion.setEnabled(true);
+                myJFrame.btPassTurn.setEnabled(true);
+            } else {
+                myJFrame.btQuestion.setEnabled(false);
+                myJFrame.btPassTurn.setEnabled(false);
+            }
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
+
 }
 
 class MyJFrame extends JFrame {

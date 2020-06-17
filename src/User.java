@@ -132,4 +132,43 @@ class UserMap {
             return null;
         }
     }
+
+    void setRandomTurn() {
+        Iterator it = clients.keySet().iterator();
+        while(it.hasNext()) {
+            User tmp = clients.get(it.next());
+            if (!tmp.host && !tmp.turn) {
+                tmp.turn = true;
+                break;
+            }
+        }
+    }
+
+    void setNextTurn() {
+        Iterator it = clients.keySet().iterator();
+        while(it.hasNext()) {
+            User tmp = clients.get(it.next());
+            if (tmp.turn) {
+                tmp.turn = false;
+                if(it.hasNext()) {
+                    User tmp1 = clients.get(it.next());
+                    if (!tmp1.host)
+                        setTurn(tmp1);
+                    else
+                        setTurn(clients.get(it.next()));
+                }
+                else {
+                    Iterator it2 = clients.keySet().iterator();
+                    if(it2.hasNext()) {
+                        User tmp2 = clients.get(it2.next());
+                        if (!tmp2.host)
+                            setTurn(tmp2);
+                        else
+                            setTurn(clients.get(it2.next()));
+                    }
+                }
+                break;
+            }
+        }
+    }
 }

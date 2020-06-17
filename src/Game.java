@@ -1,5 +1,5 @@
 /**
- * 실행 폴더에서 인증서 생성
+ * '실행폴더'에서 인증서 생성
  *
  * % keytool -genkeypair -alias myKey -keyalg RSA -validity 7 -keystore mySrvKeystore (비밀번호 123456)
  * % keytool -export -alias myKey -keystore MySrvKeystore -rfc -file MySrv.cer
@@ -12,7 +12,9 @@
  * 터미널 1 : rmiregistry
  * 터미널 2 : java Server
  * 터미널 3 : java ClientWindow
- * 터미널 4 : java CleintWindow ...
+ * 터미널 4 : java CleintWindow
+ *      .
+ *      .
  *
  */
 
@@ -22,8 +24,9 @@ import java.util.ArrayList;
 
 public interface Game extends Remote {
     String command(String command) throws RemoteException;
-    void addQuestion(String question) throws RemoteException;
-    void setAnswer(String answer) throws RemoteException;
+    void addQuestion(String questiong) throws RemoteException;
+    void addAnswer(String answer) throws RemoteException;
+    String getLastQuestion() throws RemoteException;
     boolean checkNameFormat(String name) throws RemoteException;
 
     void addUser(String name) throws RemoteException;
@@ -35,4 +38,7 @@ public interface Game extends Remote {
 
     ArrayList<String> showQuestions() throws RemoteException;
     void setFinalAnswer(String in) throws  RemoteException;
+
+    void setHostname(String in) throws RemoteException;
+    String getHostname() throws RemoteException;
 }

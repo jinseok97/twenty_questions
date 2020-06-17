@@ -128,7 +128,15 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
      *
      * @param user
      */
-    void gameStart(User user) {
+    void gameStart(User user, String answer) {
+        try {
+            user.host = true;
+            game.setHostname(user.name);
+            game.setFinalAnswer(answer);
+            userMap.setRandomTurn();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -210,12 +218,29 @@ public class Server extends UnicastRemoteObject /*implements Quiz*/ {
 
                             case 20:
                                 // 질문
-                                sendToAll("#20#" + name + "님의 질문 : " + msg);
+                                sendToAll("#20#[질문] " + name + " : " + msg);
+                                break;
+
+                            case 25:
+                                // 답변
+                                sendToAll("#25#[답변] " + name + " : " + msg);
+                                userMap.setNextTurn();
+                                sendToTurn("#41#");
+                                break;
 
 
                             case 40:
                                 // 게임 시작
-                                game.setFinalAnswer(msg);
+                                gameStart(userMap.getUser(name), msg);
+                                sendToAll("#40#" + name);
+                                sendToTurn("#41#");
+                                break;
+
+                            case 49:
+                                // 패스 처리
+                                userMap.setNextTurn();
+                                sendToTurn("#41#");
+                                break;
 
                             default:
                                 System.err.println("Exception");

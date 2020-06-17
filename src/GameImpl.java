@@ -8,6 +8,7 @@ public class GameImpl extends UnicastRemoteObject implements Game {
     private static final long serialVersionUID = 1L;
 
     boolean isStart = false;
+    String hostname;
     String finalAnswer;
     ArrayList<String> questionList;
     ArrayList<String> answerList;
@@ -42,12 +43,17 @@ public class GameImpl extends UnicastRemoteObject implements Game {
 
     @Override
     public void addQuestion(String question) throws RemoteException {
-        questionList.add(question);
+        questionList.add(question.substring(4));
     }
 
     @Override
-    public void setAnswer(String answer) throws RemoteException {
-        answerList.add(answer);
+    public void addAnswer(String answer) throws RemoteException {
+        answerList.add(answer.substring(4));
+    }
+
+    @Override
+    public String getLastQuestion() throws RemoteException {
+        return questionList.get(questionList.size()-1);
     }
 
     @Override
@@ -94,5 +100,15 @@ public class GameImpl extends UnicastRemoteObject implements Game {
     @Override
     public void setFinalAnswer(String in) throws RemoteException {
         finalAnswer = in;
+    }
+
+    @Override
+    public void setHostname(String in) throws RemoteException {
+        hostname = in;
+    }
+
+    @Override
+    public String getHostname() throws RemoteException {
+        return hostname;
     }
 }
