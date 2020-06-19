@@ -1,24 +1,21 @@
 import java.io.PrintWriter;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 
 /**
- * 게임에 접속한 유저의 정보를 관리하는 클래스
- *
- * name : 유저가 입력한 닉네임
- * pw   : 유저가 연결한 printWriter
- * host : 유저가 host일 경우 true
- * turn : 유저의 차례일 경우 true (host에게 질문)
+ * 게임 유저 정보를 관리하는 클래스
  */
 public class User {
     public String name;
     public PrintWriter pw;
-    public boolean host;    // 방장인지 아닌지
+    public boolean host;    // 출제자인지 아닌지
     public boolean turn;    // 자기 차례인지 아닌지
 
     /**
-     * 게임 접속시 입력한 닉네임, PrintWriter를 받아 User 객체 생성
+     * 닉네임, PrintWriter를 받아 User 객체 생성
      * @param name
      * @param pw
      */
@@ -31,7 +28,7 @@ public class User {
 }
 
 /**
- * User를 HashMap으로 관리하는 클래스
+ * User 클래스를 HashMap으로 관리하는 클래스
  */
 class UserMap {
     HashMap<String, User> clients;
@@ -47,7 +44,7 @@ class UserMap {
 
     /**
      * 문자열 name과 PrintWriter out을 인자로 받아
-     * clients에 새 UserInfo 객체를 추가한다.
+     * clients에 새 User 객체를 추가한다.
      * @param name
      * @param out
      */
@@ -56,15 +53,7 @@ class UserMap {
     }
 
     /**
-     * name 이름을 가진 객체를 map에서 삭제
-     * @param name
-     */
-    void remove(String name) {
-        clients.remove(name);
-    }
-
-    /**
-     * 현재 host인 UserInfo 리턴
+     * 현재 출제자(host)인 User 리턴
      * @return user
      */
     User getHost() {
@@ -83,40 +72,32 @@ class UserMap {
     }
 
     /**
-     * 현재 Turn인 User 리턴
+     * 현재 차례인 User 리턴
      * @return user
      */
     User getTurn() {
-        Iterator it = clients.keySet().iterator();
-
-        while (it.hasNext()) {
+        for (String s : clients.keySet()) {
             try {
-                User user = clients.get(it.next());
-                if (user.turn) {
-                    return user;
-                }
+                User user = clients.get(s);
+                if (user.turn) return user;
             } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return null;
     }
 
     /**
-     * user를 Turn으로 설정
+     * 해당 user.turn = true로 설정
      * @param user
      */
     void setTurn(User user) {
-        Iterator it = clients.keySet().iterator();
-
-        while (it.hasNext()) {
+        for (String s : clients.keySet()) {
             try {
-                User tmp = clients.get(it.next());
-                if (tmp == user) {
-                    tmp.turn = true;
-                } else {
-                    tmp.turn = false;
-                }
+                User tmp = clients.get(s);
+                tmp.turn = tmp == user;
             } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -126,17 +107,16 @@ class UserMap {
      * @param name
      */
     User getUser(String name) {
-        if (clients.containsKey(name)) {
-            return clients.get(name);
-        } else {
-            return null;
-        }
+        return clients.getOrDefault(name, null);
     }
 
+    /**
+     * 게임 시작 시,
+     * 랜덤으로 User에게 turn = true 설정
+     */
     void setRandomTurn() {
-        Iterator it = clients.keySet().iterator();
-        while(it.hasNext()) {
-            User tmp = clients.get(it.next());
+        for (String s : clients.keySet()) {
+            User tmp = clients.get(s);
             if (!tmp.host && !tmp.turn) {
                 tmp.turn = true;
                 break;
@@ -144,31 +124,24 @@ class UserMap {
         }
     }
 
+    /**
+     * 게임 진행 시,
+     * 다음 차례 User를 찾아 turn = true 설정
+     */
     void setNextTurn() {
-        Iterator it = clients.keySet().iterator();
-        while(it.hasNext()) {
-            User tmp = clients.get(it.next());
-            if (tmp.turn) {
-                tmp.turn = false;
-                if(it.hasNext()) {
-                    User tmp1 = clients.get(it.next());
-                    if (!tmp1.host)
-                        setTurn(tmp1);
-                    else
-                        setTurn(clients.get(it.next()));
-                }
-                else {
-                    Iterator it2 = clients.keySet().iterator();
-                    if(it2.hasNext()) {
-                        User tmp2 = clients.get(it2.next());
-                        if (!tmp2.host)
-                            setTurn(tmp2);
-                        else
-                            setTurn(clients.get(it2.next()));
-                    }
-                }
-                break;
-            }
+        ArrayList<User> tempList = new ArrayList<>();
+        for (String name : clients.keySet()) {
+            tempList.add(clients.get(name));
         }
+        for (String name : clients.keySet()) {
+            tempList.add(clients.get(name));
+        }
+
+        User nowTurn = getTurn();
+        nowTurn.turn = false;
+        if (!tempList.get(tempList.indexOf(nowTurn) + 1).host)
+            tempList.get(tempList.indexOf(nowTurn) + 1).turn = true;
+        else
+            tempList.get(tempList.indexOf(nowTurn) + 2).turn = true;
     }
 }
