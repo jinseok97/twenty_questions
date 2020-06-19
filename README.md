@@ -3,7 +3,7 @@
 RMI Registry와 SSLSocketFactory를 이용한 스무고개 게임<br><br>
 
 ## 실행
-아래 모든 과정은 source 폴더에서 수행되어야 한다<br>
+아래 모든 과정은 src 폴더에서 수행되어야 한다<br>
 
 ### 컴파일
 javac *.java <br><br>
